@@ -1,4 +1,3 @@
-import { Textarea } from "@/components/ui/textarea";
 import { ChecklistItem } from "@/hooks/use-enem-2025";
 import { cn } from "@/lib/utils";
 import {
@@ -10,17 +9,13 @@ import {
 interface PreparationTabProps {
   items: ChecklistItem[];
   completed: string[];
-  notes: Record<string, string>;
   onToggle: (id: string) => void;
-  onNoteChange: (id: string, value: string) => void;
 }
 
 export const PreparationTab = ({
   items,
   completed,
-  notes,
   onToggle,
-  onNoteChange,
 }: PreparationTabProps) => {
   return (
     <div className="space-y-4">
@@ -50,7 +45,7 @@ export const PreparationTab = ({
                 checked={isChecked}
                 onChange={() => onToggle(item.id)}
               />
-              <div className="flex-1 space-y-1">
+              <div className="flex-1">
                 <div className="flex items-start gap-1.5">
                   <div
                     className={cn(
@@ -96,15 +91,6 @@ export const PreparationTab = ({
                     </Popover>
                   )}
                 </div>
-
-                <Textarea
-                  className="min-h-[40px] text-[10px]"
-                  placeholder="Observações (opcional)..."
-                  value={notes[`prep_${item.id}`] || ""}
-                  onChange={(e) =>
-                    onNoteChange(`prep_${item.id}`, e.target.value)
-                  }
-                />
               </div>
             </div>
           );

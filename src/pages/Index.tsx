@@ -58,12 +58,10 @@ const Index = () => {
         theme === "dark" && "dark",
       )}
     >
-      {/* Modal inicial enquanto não há coordenador configurado */}
       <SetupModal open={!coordinator} onSubmit={initializeCoordinator} />
 
       {showLayout && coordinator && (
         <>
-          {/* Sidebar desktop */}
           <div className="hidden md:block">
             <Sidebar
               coordinator={coordinator}
@@ -73,7 +71,6 @@ const Index = () => {
             />
           </div>
 
-          {/* Drawer mobile */}
           {sidebarOpen && (
             <div className="fixed inset-0 z-40 flex md:hidden">
               <div className="h-full w-72 bg-background shadow-xl">
@@ -92,9 +89,7 @@ const Index = () => {
             </div>
           )}
 
-          {/* Área principal */}
           <div className="flex min-h-screen flex-1 flex-col">
-            {/* Cabeçalho */}
             <header className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur">
               <div className="flex items-center justify-between gap-3 px-3 py-2 md:px-5 md:py-3">
                 <div className="flex items-center gap-2">
@@ -170,7 +165,6 @@ const Index = () => {
                 </div>
               </div>
 
-              {/* Tabs */}
               <div className="flex items-center gap-1 overflow-x-auto px-3 pb-1 pt-1 md:px-5">
                 <TabButton
                   label="📋 Preparação"
@@ -220,15 +214,12 @@ const Index = () => {
               </div>
             </header>
 
-            {/* Conteúdo das abas */}
             <section className="flex-1 overflow-y-auto px-3 pb-3 pt-2 md:px-5 md:pb-4 md:pt-3">
               {activeTab === "preparation" && (
                 <PreparationTab
                   items={preparationItems}
                   completed={state.preparation}
-                  notes={state.notes}
                   onToggle={(id) => toggleChecklistItem("preparation", id)}
-                  onNoteChange={setNote}
                 />
               )}
               {activeTab === "morning" && (
@@ -276,7 +267,6 @@ const Index = () => {
               </div>
             </section>
 
-            {/* Log em todas as telas */}
             <LogPanel log={state.log} />
           </div>
         </>
