@@ -49,25 +49,22 @@ const Index = () => {
       ? "16 de novembro de 2025"
       : "09 de novembro de 2025";
 
+  const showLayout = Boolean(coordinator);
+
   return (
     <div
       className={cn(
-        "min-h-screen bg-background text-foreground",
+        "flex min-h-screen w-full bg-background text-foreground",
         theme === "dark" && "dark",
       )}
     >
+      {/* Modal inicial enquanto não há coordenador configurado */}
       <SetupModal open={!coordinator} onSubmit={initializeCoordinator} />
 
-      {coordinator && (
-        <div className="flex flex-col md:flex-row">
-          {/* Sidebar - fixa no desktop, toggle no mobile */}
-          <div
-            className={cn(
-              "md:block",
-              sidebarOpen ? "block" : "hidden",
-              "md:static fixed inset-y-0 left-0 z-40 bg-background/95 backdrop-blur md:bg-transparent",
-            )}
-          >
+      {showLayout && coordinator && (
+        <>
+          {/* Sidebar desktop */}
+          <div className="hidden md:block">
             <Sidebar
               coordinator={coordinator}
               occurrences={state.occurrences}
@@ -76,30 +73,73 @@ const Index = () => {
             />
           </div>
 
-          <main className="flex-1 min-h-screen flex flex-col">
-            <header className="px-4 md:px-6 pt-3 pb-2 border-b bg-card flex flex-col gap-1">
-              <div className="flex items-center justify-between gap-2">
+          {/* Drawer mobile */}
+          {sidebarOpen && (
+            <div className="fixed inset-0 z-40 flex md:hidden">
+              <div className="h-full w-72 bg-background shadow-xl">
+                <Sidebar
+                  coordinator={coordinator}
+                  occurrences={state.occurrences}
+                  currentTime={formattedNow}
+                  currentStage={currentStage}
+                  onCloseMobile={() => setSidebarOpen(false)}
+                />
+              </div>
+              <div
+                className="flex-1 bg-black/40"
+                onClick={() => setSidebarOpen(false)}
+              />
+            </div>
+          )}
+
+          {/* Área principal */}
+          <div className="flex min-h-screen flex-1 flex-col">
+            {/* Cabeçalho */}
+            <header className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur">
+              <div className="flex items-center justify-between gap-3 px-3 py-2 md:px-5 md:py-3">
                 <div className="flex items-center gap-2">
                   <button
-                    className="md:hidden inline-flex items-center justify-center h-8 w-8 rounded-md border bg-background hover:bg-muted text-xs"
-                    onClick={() => setSidebarOpen((v) => !v)}
-                    aria-label="Alternar painel lateral"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-xs md:hidden"
+                    onClick={() => setSidebarOpen(true)}
+                    aria-label="Abrir painel lateral"
                   >
                     ☰
                   </button>
-                  <div>
-                    <h1 className="text-xl md:text-2xl font-semibold">
-                      Sistema de Gestão ENEM 2025
-                    </h1>
-                    <p className="text-xs text-muted-foreground">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Painel ENEM 2025
+                    </span>
+                    <h1 className="text-base font-semibold md:text-lg">
                       Coordenação de Local de Prova
-                    </p>
+                    </h1>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1 text-[9px] text-muted-foreground">
+                      <span className="truncate">
+                        {coordinator.location} - {coordinator.city}/
+                        {coordinator.state}
+                      </span>
+                      <span className="hidden h-1 w-1 rounded-full bg-muted-foreground md:inline-block" />
+                      <span className="hidden md:inline">
+                        {examDateLabel}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="hidden sm:inline text-[10px] text-muted-foreground">
-                    {examDateLabel}
-                  </span>
+
+                <div className="flex items-center gap-1.5">
+                  <div className="hidden flex-col items-end text-[8px] text-muted-foreground sm:flex">
+                    <span>
+                      Horário Brasília:{" "}
+                      <span className="font-mono text-[9px]">
+                        {formattedNow}
+                      </span>
+                    </span>
+                    <span>
+                      Etapa:{" "}
+                      <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[8px] font-semibold text-emerald-600">
+                        {currentStage}
+                      </span>
+                    </span>
+                  </div>
                   <Button
                     size="icon"
                     variant="outline"
@@ -109,46 +149,41 @@ const Index = () => {
                   >
                     {theme === "dark" ? "☀️" : "🌙"}
                   </Button>
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="hidden h-8 w-8 text-[11px] sm:inline-flex"
+                    onClick={downloadTextReport}
+                    aria-label="Exportar relatório TXT"
+                  >
+                    📄
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="hidden h-8 w-8 text-[13px] text-red-600 sm:inline-flex"
+                    onClick={resetAll}
+                    aria-label="Reiniciar sistema"
+                  >
+                    ⟳
+                  </Button>
                 </div>
               </div>
-              <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                <div className="truncate">
-                  Local:{" "}
-                  <span className="font-medium">
-                    {coordinator.location} - {coordinator.city}/
-                    {coordinator.state}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span>
-                    Etapa:{" "}
-                    <span className="font-semibold text-primary">
-                      {currentStage}
-                    </span>
-                  </span>
-                  <span>
-                    Horário Brasília:{" "}
-                    <span className="font-mono">{formattedNow}</span>
-                  </span>
-                </div>
-              </div>
-            </header>
 
-            {/* Tabs */}
-            <div className="px-4 md:px-6 pt-2 border-b bg-card/80 backdrop-blur">
-              <div className="flex items-center gap-1 overflow-x-auto pb-1">
+              {/* Tabs */}
+              <div className="flex items-center gap-1 overflow-x-auto px-3 pb-1 pt-1 md:px-5">
                 <TabButton
-                  label="📋 Preparação Prévia"
+                  label="📋 Preparação"
                   active={activeTab === "preparation"}
                   onClick={() => setActiveTab("preparation")}
                 />
                 <TabButton
-                  label="🌅 Manhã do Exame"
+                  label="🌅 Manhã"
                   active={activeTab === "morning"}
                   onClick={() => setActiveTab("morning")}
                 />
                 <TabButton
-                  label="📝 Durante a Aplicação"
+                  label="📝 Durante"
                   active={activeTab === "during"}
                   onClick={() => setActiveTab("during")}
                 />
@@ -158,32 +193,35 @@ const Index = () => {
                   onClick={() => setActiveTab("closing")}
                 />
                 <TabButton
-                  label="📊 Relatório Final"
+                  label="📊 Relatório"
                   active={activeTab === "report"}
                   onClick={() => setActiveTab("report")}
                 />
-                <div className="flex-1" />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="hidden md:inline-flex"
-                  onClick={downloadTextReport}
-                >
-                  📄 Exportar Relatório
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="hidden md:inline-flex text-red-600"
-                  onClick={resetAll}
-                >
-                  🔄 Reiniciar
-                </Button>
+                <div className="ml-auto flex items-center gap-1 md:hidden">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 px-2 text-[9px]"
+                    onClick={downloadTextReport}
+                    aria-label="Exportar relatório TXT"
+                  >
+                    📄 Relatório
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-[9px] text-red-600"
+                    onClick={resetAll}
+                    aria-label="Reiniciar sistema"
+                  >
+                    ⟳ Reset
+                  </Button>
+                </div>
               </div>
-            </div>
+            </header>
 
-            {/* Conteúdo */}
-            <section className="flex-1 px-4 md:px-6 py-4 space-y-4">
+            {/* Conteúdo das abas */}
+            <section className="flex-1 overflow-y-auto px-3 pb-3 pt-2 md:px-5 md:pb-4 md:pt-3">
               {activeTab === "preparation" && (
                 <PreparationTab
                   items={preparationItems}
@@ -232,15 +270,16 @@ const Index = () => {
                   onReset={resetAll}
                 />
               )}
+
+              <div className="mt-4">
+                <MadeWithDyad />
+              </div>
             </section>
 
-            <div className="py-2">
-              <MadeWithDyad />
-            </div>
-          </main>
-
-          <LogPanel log={state.log} />
-        </div>
+            {/* Log em todas as telas */}
+            <LogPanel log={state.log} />
+          </div>
+        </>
       )}
     </div>
   );
@@ -256,10 +295,10 @@ const TabButton = ({ label, active, onClick }: TabButtonProps) => (
   <button
     onClick={onClick}
     className={cn(
-      "px-2.5 py-1.5 rounded-md text-[10px] whitespace-nowrap border-b-2 transition-colors",
+      "px-2.25 py-1.5 rounded-full text-[9px] md:text-[10px] transition-colors",
       active
-        ? "border-primary text-primary font-semibold bg-muted/60"
-        : "border-transparent text-muted-foreground hover:bg-muted/40",
+        ? "bg-primary text-primary-foreground font-semibold shadow-sm"
+        : "bg-muted text-muted-foreground hover:bg-muted/80",
     )}
   >
     {label}
