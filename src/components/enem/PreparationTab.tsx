@@ -1,10 +1,6 @@
 import { ChecklistItem } from "@/hooks/use-enem-2025";
 import { cn } from "@/lib/utils";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { InfoDialog } from "@/components/enem/InfoDialog";
 
 interface PreparationTabProps {
   items: ChecklistItem[];
@@ -65,33 +61,11 @@ export const PreparationTab = ({
                     </div>
                   </div>
                   {item.info && (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button
-                          type="button"
-                          className="mt-0.5 h-5 w-5 flex items-center justify-center rounded-full bg-muted text-[9px] text-muted-foreground"
-                          aria-label="Ver detalhes do procedimento"
-                        >
-                          i
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        side="top"
-                        align="end"
-                        className="max-w-xs space-y-1 rounded-xl border bg-popover p-3 text-[10px] leading-snug shadow-md"
-                      >
-                        <div className="font-semibold">
-                          {item.info.titulo || item.text}
-                        </div>
-                        <div className="text-muted-foreground whitespace-pre-line">
-                          {item.info.corpo}
-                        </div>
-                        <div className="pt-1 text-[8px] text-muted-foreground/80">
-                          Fonte: Manual do {item.info.fonte.manual}, p.
-                          {item.info.fonte.pagina}.
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                    <InfoDialog
+                      title={item.info.titulo || item.text}
+                      body={item.info.corpo}
+                      sourceLabel={`Fonte: Manual do ${item.info.fonte.manual}, p. ${item.info.fonte.pagina}.`}
+                    />
                   )}
                 </div>
               </div>
