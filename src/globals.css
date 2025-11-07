@@ -157,7 +157,8 @@
 }
 
 .tab-item-active {
-  @apply text-primary font-semibold bg-primary/6 relative;
+  /* bg-primary/10 é válido e gera fundo suave para aba ativa */
+  @apply text-primary font-semibold bg-primary/10 relative;
 }
 
 .tab-item-active::after {
