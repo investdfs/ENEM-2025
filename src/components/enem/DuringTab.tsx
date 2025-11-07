@@ -34,120 +34,147 @@ export const DuringTab = ({
     setForm({ type: "", description: "", critical: false });
   };
 
+  const total = stats.present + stats.absent || 1;
+  const progress =
+    stats.present > 0 ? Math.min(100, Math.round((stats.present / total) * 100)) : 0;
+
   return (
-    <div className="space-y-4">
-      <div className="grid gap-3 md:grid-cols-3">
-        <StatCard label="Tempo Restante" value={examTimeRemaining} />
-        <StatCard label="Presentes" value={stats.present.toString()} />
-        <StatCard label="Ausentes" value={stats.absent.toString()} />
+    <div className="space-y-3">
+      {/* Hero timer */}
+      <div className="card-elevated space-y-2">
+        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+          <span>Aplicação em andamento</span>
+          <span>Tempo restante</span>
+        </div>
+        <div className="text-3xl font-semibold text-primary text-center leading-tight">
+          {examTimeRemaining !== "--:--:--"
+            ? examTimeRemaining
+            : "Aguardando início"}
+        </div>
+        <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+          <div
+            className="h-full bg-primary/70 transition-all"
+            style={{ width: `${examTimeRemaining === "--:--:--" ? 0 : 100}%` }}
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-2 pt-1 text-center">
+          <KpiCard label="Presentes" value={stats.present} />
+          <KpiCard label="Ausentes" value={stats.absent} />
+        </div>
       </div>
 
-      <div className="rounded-lg border bg-muted/40 px-4 py-3 text-sm flex gap-2">
+      {/* Aviso */}
+      <div className="card-elevated flex items-start gap-2 bg-muted/40 border-muted">
         <span>📢</span>
-        <div>
-          Acompanhe o andamento da prova e registre qualquer ocorrência relevante
-          para compor o relatório final.
-        </div>
+        <p className="text-[10px] text-muted-foreground">
+          Registre ocorrências em tempo real para facilitar o relatório oficial
+          e rastreabilidade de incidentes.
+        </p>
       </div>
 
-      <div className="rounded-lg border bg-background p-4 space-y-3">
-        <h3 className="font-semibold text-sm flex items-center gap-2">
-          📋 Registro de Ocorrências
-        </h3>
-        <div className="space-y-2">
-          <div className="space-y-1">
-            <Label>Tipo de Ocorrência</Label>
-            <Input
-              placeholder="Ex: Falha de equipamento, falta de colaborador..."
-              value={form.type}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, type: e.target.value }))
-              }
-            />
-          </div>
-          <div className="space-y-1">
-            <Label>Descrição</Label>
-            <Textarea
-              placeholder="Descreva detalhadamente o que ocorreu..."
-              value={form.description}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, description: e.target.value }))
-              }
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="occCritical"
-              checked={form.critical}
-              onCheckedChange={(checked) =>
-                setForm((f) => ({ ...f, critical: Boolean(checked) }))
-              }
-            />
-            <Label
-              htmlFor="occCritical"
-              className="text-xs text-red-600 font-medium"
-            >
-              Marcar como ocorrência CRÍTICA
-            </Label>
-          </div>
-          <Button size="sm" className="mt-1" onClick={handleSubmit}>
-            ➕ Registrar Ocorrência
-          </Button>
+      {/* Form rápido */}
+      <div className="card-elevated space-y-2">
+        <div className="text-xs font-semibold flex items-center gap-2">
+          ➕ Registrar ocorrência
         </div>
+        <div className="space-y-1">
+          <Label className="text-[10px]">Tipo de Ocorrência</Label>
+          <Input
+            placeholder="Ex: Falha de equipamento, falta de colaborador..."
+            value={form.type}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, type: e.target.value }))
+            }
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[10px]">Descrição</Label>
+          <Textarea
+            placeholder="Descreva rapidamente o que ocorreu..."
+            value={form.description}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, description: e.target.value }))
+            }
+            className="min-h-[72px]"
+          />
+        </div>
+        <div className="flex items-center gap-2 pt-1">
+          <Checkbox
+            id="occCritical"
+            checked={form.critical}
+            onCheckedChange={(checked) =>
+              setForm((f) => ({ ...f, critical: Boolean(checked) }))
+            }
+          />
+          <Label
+            htmlFor="occCritical"
+            className="text-[10px] text-destructive font-semibold"
+          >
+            Marcar como ocorrência crítica
+          </Label>
+        </div>
+        <Button
+          size="sm"
+          className="mt-1 w-full touch-target text-xs font-semibold"
+          onClick={handleSubmit}
+          aria-label="Salvar ocorrência registrada"
+        >
+          Salvar ocorrência
+        </Button>
       </div>
 
+      {/* Lista de ocorrências */}
       <OccurrenceList occurrences={occurrences} />
     </div>
   );
 };
 
-const StatCard = ({ label, value }: { label: string; value: string }) => (
-  <div className="rounded-lg border bg-card p-3 text-center">
-    <div className="text-2xl font-semibold">{value}</div>
-    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-      {label}
-    </div>
+const KpiCard = ({ label, value }: { label: string; value: number }) => (
+  <div className="rounded-2xl bg-muted/60 border border-border px-3 py-2 flex flex-col items-start gap-1">
+    <div className="text-[10px] text-muted-foreground">{label}</div>
+    <div className="text-lg font-semibold leading-none">{value}</div>
   </div>
 );
 
 const OccurrenceList = ({ occurrences }: { occurrences: Occurrence[] }) => {
   if (!occurrences.length) {
     return (
-      <div className="rounded-lg border bg-muted/30 px-4 py-6 text-center text-xs text-muted-foreground">
+      <div className="card-elevated text-center text-[10px] text-muted-foreground">
         Nenhuma ocorrência registrada até o momento.
       </div>
     );
   }
   const sorted = [...occurrences].sort((a, b) => b.id - a.id);
   return (
-    <div className="rounded-lg border bg-card p-3 space-y-2">
-      <h4 className="text-xs font-semibold">
-        Ocorrências Registradas ({occurrences.length})
-      </h4>
+    <div className="card-elevated space-y-1.5">
+      <div className="text-xs font-semibold">
+        Ocorrências registradas ({occurrences.length})
+      </div>
       {sorted.map((occ) => (
         <div
           key={occ.id}
-          className={`rounded-md border px-3 py-2 text-xs space-y-1 ${
+          className={cn(
+            "rounded-2xl border px-3 py-2 text-[9px] space-y-0.5",
             occ.critical
-              ? "border-red-500/70 bg-red-50"
-              : "border-border bg-background"
-          }`}
+              ? "border-destructive/70 bg-destructive/5"
+              : "border-border bg-background",
+          )}
         >
           <div className="flex justify-between gap-2">
-            <span className="font-semibold">
+            <span className="font-semibold truncate">
               {occ.critical ? "🚨 " : ""}
               {occ.type}
             </span>
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-[8px] text-muted-foreground">
               ⏰ {occ.timestamp}
             </span>
           </div>
-          <div className="text-[11px] text-muted-foreground">
+          <div className="text-[9px] text-muted-foreground line-clamp-3">
             {occ.description}
           </div>
           {occ.critical && (
-            <div className="text-[10px] text-red-600 font-semibold">
-              ⚠️ OCORRÊNCIA CRÍTICA
+            <div className="text-[8px] text-destructive font-semibold">
+              Crítica - acione protocolo.
             </div>
           )}
         </div>
@@ -155,3 +182,7 @@ const OccurrenceList = ({ occurrences }: { occurrences: Occurrence[] }) => {
     </div>
   );
 };
+
+function cn(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(" ");
+}

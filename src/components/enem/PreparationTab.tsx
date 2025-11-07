@@ -18,12 +18,16 @@ export const PreparationTab = ({
   onToggle,
 }: PreparationTabProps) => {
   return (
-    <div className="space-y-4">
-      <div className="flex gap-2 rounded-lg border bg-muted/40 px-4 py-3 text-xs">
-        <span>ℹ️</span>
-        <div>
-          <strong>Preparação Prévia:</strong> siga estes passos antes do dia de
-          aplicação. Itens concluídos ficarão riscados para indicar avanço.
+    <div className="space-y-3">
+      <div className="card-elevated flex items-start gap-2">
+        <span className="mt-0.5">ℹ️</span>
+        <div className="space-y-0.5">
+          <div className="text-xs font-semibold">
+            Preparação prévia do local
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            Execute estes passos antes do dia da aplicação. Itens concluídos ficarão marcados para visão rápida.
+          </p>
         </div>
       </div>
 
@@ -34,48 +38,47 @@ export const PreparationTab = ({
             <div
               key={item.id}
               className={cn(
-                "flex items-start gap-3 rounded-md border bg-background px-3 py-2.5 transition-colors",
-                isChecked && "bg-emerald-50/60 border-emerald-400/80",
-                item.critical && "border-l-4 border-l-red-500/80",
+                "checklist-item",
+                isChecked && "bg-primary/3 border-primary/30",
               )}
             >
               <input
                 type="checkbox"
-                className="mt-1 h-4 w-4 cursor-pointer"
+                className="h-5 w-5 rounded border border-border cursor-pointer touch-target"
                 checked={isChecked}
                 onChange={() => onToggle(item.id)}
+                aria-label={`Marcar "${item.text}" como concluído`}
               />
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <div className="flex items-start gap-1.5">
-                  <div
-                    className={cn(
-                      "text-xs font-medium leading-snug",
-                      isChecked && "line-through text-muted-foreground",
-                    )}
-                  >
-                    {item.text}
-                    {item.critical && (
-                      <span className="ml-1 text-[9px] font-semibold text-red-600">
-                        ⚡
-                      </span>
-                    )}
+                  <div className="flex-1 min-w-0">
+                    <div className={cn("checklist-title")}>
+                      {item.text}
+                      {item.critical && (
+                        <span className="ml-1 text-[9px] text-destructive">
+                          ⚡
+                        </span>
+                      )}
+                    </div>
+                    <div className="checklist-subtitle">
+                      {item.role || "Coordenador"} · Pré-prova
+                    </div>
                   </div>
-
                   {item.info && (
                     <Popover>
                       <PopoverTrigger asChild>
                         <button
                           type="button"
-                          className="mt-0.5 flex h-4 w-4 items-center justify-center rounded-full border border-muted-foreground/30 text-[8px] text-muted-foreground hover:bg-muted/40"
-                          aria-label="Mais informações sobre esta tarefa"
+                          className="mt-0.5 h-5 w-5 flex items-center justify-center rounded-full bg-muted text-[9px] text-muted-foreground"
+                          aria-label="Ver detalhes do procedimento"
                         >
                           i
                         </button>
                       </PopoverTrigger>
                       <PopoverContent
                         side="top"
-                        align="start"
-                        className="max-w-xs space-y-1 rounded-md border bg-popover p-3 text-[10px] leading-snug shadow-md"
+                        align="end"
+                        className="max-w-xs space-y-1 rounded-xl border bg-popover p-3 text-[10px] leading-snug shadow-md"
                       >
                         <div className="font-semibold">
                           {item.info.titulo || item.text}
@@ -114,18 +117,18 @@ const CriticalSummary = ({
 
   if (!pending.length) {
     return (
-      <div className="mt-3 rounded-md border border-emerald-500 bg-emerald-50 px-3 py-2 text-[10px]">
+      <div className="card-elevated bg-secondary/10 border-secondary/30 text-[10px]">
         ✅ Todos os itens críticos de preparação foram concluídos.
       </div>
     );
   }
 
   return (
-    <div className="mt-3 space-y-1 rounded-md border border-amber-500 bg-amber-50 px-3 py-2 text-[10px]">
-      <div className="font-semibold text-amber-700">
+    <div className="card-elevated border-amber-300/80 bg-amber-50 text-[10px] space-y-1">
+      <div className="font-semibold text-amber-800">
         ⚠️ Itens críticos pendentes ({pending.length}):
       </div>
-      <ul className="space-y-0.5 list-disc pl-4 text-amber-800">
+      <ul className="space-y-0.5 list-disc pl-4 text-amber-900">
         {pending.map((i) => (
           <li key={i.id}>{i.text}</li>
         ))}

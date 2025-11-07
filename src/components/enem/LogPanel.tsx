@@ -25,23 +25,21 @@ export const LogPanel = ({ log }: LogPanelProps) => {
   );
 
   return (
-    <div className="flex-1 flex flex-col px-3 pb-3 pt-2 md:px-6 md:pt-4 md:pb-5">
-      <div className="mb-3">
+    <div className="space-y-3 no-x-overflow">
+      <div className="card-elevated">
         <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
           Histórico de Procedimentos
         </div>
-        <h2 className="text-base md:text-lg font-semibold">
-          Visão Geral do Local de Prova
+        <h2 className="text-base font-semibold">
+          Linha do tempo do local de prova
         </h2>
-        <p className="mt-0.5 text-[9px] text-muted-foreground max-w-xl">
-          Acompanhe todas as ações registradas pelo coordenador: checklists concluídos,
-          ocorrências, etapas operacionais e encerramento. Use este painel para
-          revisar e apoiar o preenchimento do relatório oficial.
+        <p className="mt-0.5 text-[10px] text-muted-foreground">
+          Veja tudo o que foi concluído: checklists, ocorrências, registros
+          operacionais e encerramento, para apoiar o relatório oficial.
         </p>
       </div>
 
-      {/* Filtros */}
-      <div className="mb-3 flex flex-wrap items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
         <FilterPill
           label="Tudo"
           icon="✨"
@@ -73,29 +71,29 @@ export const LogPanel = ({ log }: LogPanelProps) => {
           onClick={() => setCategory("closing")}
         />
         <div className="ml-auto text-[8px] text-muted-foreground">
-          Registros totais: <span className="font-semibold">{log.length}</span>
+          Registros: <span className="font-semibold">{log.length}</span>
         </div>
       </div>
 
-      {/* Lista estilizada */}
-      <div className="flex-1 overflow-y-auto rounded-xl border border-border bg-card/80 shadow-sm px-3 py-3 space-y-1.5">
+      <div className="flex-1 overflow-y-auto rounded-2xl border border-border bg-card/90 shadow-sm px-3 py-3 space-y-1.5 max-h-[65vh]">
         {filtered.length === 0 ? (
-          <div className="h-full flex items-center justify-center text-[10px] text-muted-foreground">
-            Nenhum procedimento registrado ainda. Complete ações no painel para ver o histórico aqui.
+          <div className="h-full flex items-center justify-center text-[10px] text-muted-foreground text-center">
+            Nenhum procedimento registrado ainda. Conforme você conclui checklists
+            e registra ocorrências, eles aparecem aqui.
           </div>
         ) : (
           filtered.map((e, index) => (
             <div
               key={e.id}
               className={cn(
-                "flex items-start gap-2 rounded-lg border px-3 py-2 bg-background/95 transition-colors",
+                "flex items-start gap-2 rounded-2xl border px-3 py-2 bg-background/95",
                 getHighlightClass(e),
               )}
             >
               <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-muted text-[13px]">
                 {getLogIcon(e.category)}
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[10px] font-semibold line-clamp-2">
                     {e.name}
@@ -104,11 +102,13 @@ export const LogPanel = ({ log }: LogPanelProps) => {
                     {getCategoryLabel(e.category)}
                   </span>
                   <span className="text-[7px] text-muted-foreground ml-auto">
-                    #{log.length - index}
+                    #{filtered.length - index}
                   </span>
                 </div>
                 <div className="mt-0.5 flex items-center justify-between gap-2 text-[7px] text-muted-foreground">
-                  <span>Registrado em: {e.timestamp}</span>
+                  <span className="truncate">
+                    Registrado em: {e.timestamp}
+                  </span>
                   <span className="italic">
                     Status: {getStatusLabel(e.status)}
                   </span>
@@ -137,11 +137,12 @@ const FilterPill = ({
     type="button"
     onClick={onClick}
     className={cn(
-      "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[8px] font-medium transition-colors",
+      "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[8px] font-medium touch-target",
       active
         ? "bg-primary text-primary-foreground border-primary shadow-sm"
         : "bg-muted text-muted-foreground border-border hover:bg-muted/80",
     )}
+    aria-label={`Filtrar por ${label}`}
   >
     <span>{icon}</span>
     <span>{label}</span>
@@ -173,16 +174,16 @@ function getStatusLabel(status: LogEntry["status"]) {
 
 function getHighlightClass(entry: LogEntry) {
   if (entry.category === "incidents") {
-    return "border-red-300/70 bg-red-50/80";
+    return "border-destructive/50 bg-destructive/5";
   }
   if (entry.category === "closing") {
-    return "border-emerald-200/80 bg-emerald-50/70";
+    return "border-emerald-300/70 bg-emerald-50/80";
   }
   if (entry.category === "preparation") {
-    return "border-sky-200/80 bg-sky-50/70";
+    return "border-sky-300/70 bg-sky-50/80";
   }
   if (entry.category === "operational") {
-    return "border-violet-200/80 bg-violet-50/70";
+    return "border-violet-300/70 bg-violet-50/80";
   }
   return "border-border bg-background/95";
 }
