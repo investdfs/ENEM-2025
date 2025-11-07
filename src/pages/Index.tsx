@@ -27,7 +27,6 @@ const Index = () => {
     initializeCoordinator,
     toggleTheme,
     toggleChecklistItem,
-    setNote,
     addOccurrence,
     resetAll,
     downloadTextReport,
@@ -54,14 +53,15 @@ const Index = () => {
   return (
     <div
       className={cn(
-        "flex min-h-screen w-full bg-background text-foreground",
+        "min-h-screen w-full bg-background text-foreground",
         theme === "dark" && "dark",
       )}
     >
       <SetupModal open={!coordinator} onSubmit={initializeCoordinator} />
 
       {showLayout && coordinator && (
-        <>
+        <div className="flex min-h-screen">
+          {/* Sidebar fixa à esquerda */}
           <div className="hidden md:block">
             <Sidebar
               coordinator={coordinator}
@@ -71,6 +71,7 @@ const Index = () => {
             />
           </div>
 
+          {/* Sidebar mobile sobreposta */}
           {sidebarOpen && (
             <div className="fixed inset-0 z-40 flex md:hidden">
               <div className="h-full w-72 bg-background shadow-xl">
@@ -89,7 +90,8 @@ const Index = () => {
             </div>
           )}
 
-          <div className="flex min-h-screen flex-1 flex-col">
+          {/* Conteúdo principal (com espaço à direita para o LogPanel em desktop) */}
+          <div className="flex-1 flex flex-col md:pr-72">
             <header className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur">
               <div className="flex items-center justify-between gap-3 px-3 py-2 md:px-5 md:py-3">
                 <div className="flex items-center gap-2">
@@ -214,7 +216,7 @@ const Index = () => {
               </div>
             </header>
 
-            <section className="flex-1 overflow-y-auto px-3 pb-3 pt-2 md:px-5 md:pb-4 md:pt-3">
+            <section className="flex-1 overflow-y-auto px-3 pb-3 pt-2 md:px-5 md:pb-4 md:pt-3 space-y-3">
               {activeTab === "preparation" && (
                 <PreparationTab
                   items={preparationItems}
@@ -262,14 +264,14 @@ const Index = () => {
                 />
               )}
 
-              <div className="mt-4">
+              <div className="pt-2">
                 <MadeWithDyad />
               </div>
             </section>
 
             <LogPanel log={state.log} />
           </div>
-        </>
+        </div>
       )}
     </div>
   );
@@ -285,10 +287,10 @@ const TabButton = ({ label, active, onClick }: TabButtonProps) => (
   <button
     onClick={onClick}
     className={cn(
-      "px-2.25 py-1.5 rounded-full text-[9px] md:text-[10px] transition-colors",
+      "px-2.5 py-1.5 rounded-full text-[9px] md:text-[10px] transition-colors border",
       active
-        ? "bg-primary text-primary-foreground font-semibold shadow-sm"
-        : "bg-muted text-muted-foreground hover:bg-muted/80",
+        ? "bg-primary text-primary-foreground font-semibold border-primary shadow-sm"
+        : "bg-muted text-muted-foreground border-border hover:bg-muted/80",
     )}
   >
     {label}

@@ -40,7 +40,7 @@ export const Sidebar = ({
 
       <div className="space-y-2">
         <SectionLabel>Local de aplicação</SectionLabel>
-        <div className="rounded-md bg-sidebar-accent px-3 py-2">
+        <div className="rounded-md bg-sidebar-accent px-3 py-2 border border-sidebar-border/60">
           <div className="text-xs font-semibold text-sidebar-foreground">
             {coordinator.location || "-"}
           </div>
@@ -52,7 +52,7 @@ export const Sidebar = ({
 
       <div className="space-y-2">
         <SectionLabel>Coordenador(a)</SectionLabel>
-        <div className="rounded-md bg-sidebar-accent px-3 py-2 text-xs">
+        <div className="rounded-md bg-sidebar-accent px-3 py-2 text-xs border border-sidebar-border/60">
           <div className="font-medium text-sidebar-foreground">
             {coordinator.name || "-"}
           </div>
@@ -64,7 +64,7 @@ export const Sidebar = ({
 
       <div className="space-y-2">
         <SectionLabel>Status em tempo real</SectionLabel>
-        <div className="rounded-md bg-sidebar-accent px-3 py-2 text-[10px] space-y-1.5">
+        <div className="rounded-md bg-sidebar-accent px-3 py-2 text-[10px] space-y-1.5 border border-sidebar-border/60">
           <div className="flex items-center justify-between">
             <span className="text-sidebar-foreground/70">Horário Brasília</span>
             <span className="font-mono text-[10px] text-sidebar-foreground">
@@ -89,17 +89,6 @@ export const Sidebar = ({
         </div>
       </div>
 
-      <button
-        onClick={() =>
-          window.alert(
-            "🚨 Em caso de emergência, contate imediatamente a Instituição Aplicadora.",
-          )
-        }
-        className="mt-1 w-full rounded-md bg-red-600 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-red-700"
-      >
-        🚨 Botão de Emergência
-      </button>
-
       {coordinator.simulationMode && (
         <div className="mt-1 inline-flex items-center gap-1 rounded-full border border-yellow-500/40 bg-yellow-500/10 px-2 py-0.5 text-[9px] text-yellow-700">
           🎮 Modo simulação ativo
@@ -120,7 +109,7 @@ const SectionLabel = ({ children }: { children: string }) => (
 );
 
 const MiniStat = ({ label, value }: { label: string; value: number }) => (
-  <div className="rounded-md bg-sidebar-accent px-1.5 py-1">
+  <div className="rounded-md bg-sidebar-accent px-1.5 py-1 border border-sidebar-border/60">
     <div className="text-[11px] font-semibold text-sidebar-foreground">
       {value}
     </div>
