@@ -1,6 +1,6 @@
 import { LogEntry } from "@/hooks/use-enem-2025";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 type CategoryFilter =
   | "all"
@@ -11,194 +11,135 @@ type CategoryFilter =
 
 interface LogPanelProps {
   log: LogEntry[];
+  onBack: () => void;
 }
 
-export const LogPanel = ({ log }: LogPanelProps) => {
+export const LogPanel = ({ log, onBack }: LogPanelProps) => {
   const [category, setCategory] = useState<CategoryFilter>("all");
-  const [minimized, setMinimized] = useState(false);
 
-  const filtered =
-    category === "all" ? log : log.filter((e) => e.category === category);
+  const filtered = useMemo(
+    () =>
+      category === "all"
+        ? log
+        : log.filter((e) => e.category === category),
+    [log, category],
+  );
 
-  // Painel lateral fixo no desktop
   return (
-    <>
-      {/* Desktop: coluna lateral à direita */}
-      <div className="hidden md:block">
-        <aside className="fixed right-4 top-24 bottom-4 z-20 w-64 rounded-lg border border-border bg-card shadow-lg flex flex-col">
-          <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/40">
-            <div className="text-[10px] font-semibold flex items-center gap-1.5">
-              📋 Histórico de Procedimentos
-            </div>
-            <div className="flex items-center gap-1">
-              <CategoryDotButton
-                label="T"
-                title="Todos"
-                active={category === "all"}
-                onClick={() => setCategory("all")}
-              />
-              <CategoryDotButton
-                label="📋"
-                title="Preparação"
-                active={category === "preparation"}
-                onClick={() => setCategory("preparation")}
-              />
-              <CategoryDotButton
-                label="⚙️"
-                title="Operacional"
-                active={category === "operational"}
-                onClick={() => setCategory("operational")}
-              />
-              <CategoryDotButton
-                label="🚨"
-                title="Ocorrências"
-                active={category === "incidents"}
-                onClick={() => setCategory("incidents")}
-              />
-              <CategoryDotButton
-                label="📊"
-                title="Encerramento"
-                active={category === "closing"}
-                onClick={() => setCategory("closing")}
-              />
-            </div>
+    <div className="flex-1 flex flex-col px-3 pb-3 pt-2 md:px-6 md:pt-4 md:pb-5">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <div>
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Histórico de Procedimentos
           </div>
-          <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1 text-[9px]">
-            {filtered.length === 0 ? (
-              <div className="text-muted-foreground text-[9px] py-4 text-center">
-                Nenhum procedimento registrado ainda.
-              </div>
-            ) : (
-              filtered.map((e) => (
-                <div
-                  key={e.id}
-                  className="flex items-start gap-1.5 rounded-md border border-border/40 bg-background px-2 py-1"
-                >
-                  <span className="mt-[1px] text-xs">
-                    {getLogIcon(e.category)}
-                  </span>
-                  <div className="flex-1">
-                    <div className="truncate font-medium">{e.name}</div>
-                    <div className="text-[7px] text-muted-foreground">
-                      {e.timestamp}
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </aside>
+          <h2 className="text-base md:text-lg font-semibold">
+            Visão Geral do Local de Prova
+          </h2>
+          <p className="mt-0.5 text-[9px] text-muted-foreground max-w-xl">
+            Acompanhe todas as ações registradas pelo coordenador: checklists concluídos,
+            ocorrências, etapas operacionais e encerramento. Use este painel para
+            revisar e apoiar o preenchimento do relatório oficial.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onBack}
+          className="rounded-full border border-border bg-muted px-3 py-1.5 text-[9px] font-semibold text-muted-foreground hover:bg-muted/80"
+        >
+          ⬅ Voltar ao Painel
+        </button>
       </div>
 
-      {/* Mobile: mantém painel fixo inferior com colapsar */}
-      <div
-        className={cn(
-          "md:hidden fixed bottom-2 left-2 right-2 z-30 transition-all",
-          minimized && "translate-y-[88%] opacity-85",
-        )}
-      >
-        <div className="rounded-t-lg bg-card border border-border shadow-lg">
-          <div className="flex items-center justify-between px-3 py-1.5">
-            <div className="text-[10px] font-semibold flex items-center gap-1.5">
-              📋 Histórico de Procedimentos
-            </div>
-            <div className="flex items-center gap-1">
-              <CategoryButton
-                label="Todos"
-                active={category === "all"}
-                onClick={() => setCategory("all")}
-              />
-              <CategoryButton
-                label="📋"
-                active={category === "preparation"}
-                onClick={() => setCategory("preparation")}
-              />
-              <CategoryButton
-                label="⚙️"
-                active={category === "operational"}
-                onClick={() => setCategory("operational")}
-              />
-              <CategoryButton
-                label="🚨"
-                active={category === "incidents"}
-                onClick={() => setCategory("incidents")}
-              />
-              <CategoryButton
-                label="📊"
-                active={category === "closing"}
-                onClick={() => setCategory("closing")}
-              />
-              <button
-                onClick={() => setMinimized((v) => !v)}
-                className="ml-1 text-[9px] px-1.5 py-0.5 rounded border border-border hover:bg-muted"
-                aria-label={minimized ? "Expandir histórico" : "Recolher histórico"}
-              >
-                {minimized ? "▲" : "▼"}
-              </button>
-            </div>
-          </div>
-          {!minimized && (
-            <div className="max-h-40 overflow-y-auto px-3 py-1.5 space-y-0.5 text-[9px]">
-              {filtered.length === 0 ? (
-                <div className="text-muted-foreground text-[9px] py-2 text-center">
-                  Nenhum procedimento registrado ainda.
-                </div>
-              ) : (
-                filtered.map((e) => (
-                  <div
-                    key={e.id}
-                    className="flex items-center gap-1 border-b last:border-b-0 border-border/20 py-0.5"
-                  >
-                    <span className="w-4 text-center">
-                      {getLogIcon(e.category)}
-                    </span>
-                    <span className="flex-1 truncate">{e.name}</span>
-                    <span className="text-[7px] text-muted-foreground">
-                      {e.timestamp}
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
+      {/* Filtros */}
+      <div className="mb-3 flex flex-wrap items-center gap-1.5">
+        <FilterPill
+          label="Tudo"
+          icon="✨"
+          active={category === "all"}
+          onClick={() => setCategory("all")}
+        />
+        <FilterPill
+          label="Preparação"
+          icon="📋"
+          active={category === "preparation"}
+          onClick={() => setCategory("preparation")}
+        />
+        <FilterPill
+          label="Operacional"
+          icon="⚙️"
+          active={category === "operational"}
+          onClick={() => setCategory("operational")}
+        />
+        <FilterPill
+          label="Ocorrências"
+          icon="🚨"
+          active={category === "incidents"}
+          onClick={() => setCategory("incidents")}
+        />
+        <FilterPill
+          label="Encerramento"
+          icon="📊"
+          active={category === "closing"}
+          onClick={() => setCategory("closing")}
+        />
+        <div className="ml-auto text-[8px] text-muted-foreground">
+          Registros totais: <span className="font-semibold">{log.length}</span>
         </div>
       </div>
-    </>
+
+      {/* Lista bonita */}
+      <div className="flex-1 overflow-y-auto rounded-xl border border-border bg-card/80 shadow-sm px-3 py-3 space-y-1.5">
+        {filtered.length === 0 ? (
+          <div className="h-full flex items-center justify-center text-[10px] text-muted-foreground">
+            Nenhum procedimento registrado ainda. Complete ações no painel para ver o histórico aqui.
+          </div>
+        ) : (
+          filtered.map((e, index) => (
+            <div
+              key={e.id}
+              className={cn(
+                "flex items-start gap-2 rounded-lg border px-3 py-2 bg-background/95 transition-colors",
+                getHighlightClass(e),
+              )}
+            >
+              <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-muted text-[13px]">
+                {getLogIcon(e.category)}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-semibold line-clamp-2">
+                    {e.name}
+                  </span>
+                  <span className="rounded-full bg-muted px-1.5 py-0.5 text-[7px] font-semibold text-muted-foreground">
+                    {getCategoryLabel(e.category)}
+                  </span>
+                  <span className="text-[7px] text-muted-foreground ml-auto">
+                    #{log.length - index}
+                  </span>
+                </div>
+                <div className="mt-0.5 flex items-center justify-between gap-2 text-[7px] text-muted-foreground">
+                  <span>Registrado em: {e.timestamp}</span>
+                  <span className="italic">
+                    Status: {getStatusLabel(e.status)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
   );
 };
 
-const CategoryDotButton = ({
+const FilterPill = ({
   label,
-  title,
+  icon,
   active,
   onClick,
 }: {
   label: string;
-  title: string;
-  active: boolean;
-  onClick: () => void;
-}) => (
-  <button
-    type="button"
-    title={title}
-    onClick={onClick}
-    className={cn(
-      "h-5 w-5 flex items-center justify-center rounded-full border text-[8px]",
-      active
-        ? "bg-primary text-primary-foreground border-primary"
-        : "border-border text-muted-foreground hover:bg-muted",
-    )}
-  >
-    {label}
-  </button>
-);
-
-const CategoryButton = ({
-  label,
-  active,
-  onClick,
-}: {
-  label: string;
+  icon: string;
   active: boolean;
   onClick: () => void;
 }) => (
@@ -206,13 +147,14 @@ const CategoryButton = ({
     type="button"
     onClick={onClick}
     className={cn(
-      "text-[8px] px-1.5 py-0.5 rounded border",
+      "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[8px] font-medium transition-colors",
       active
-        ? "bg-primary text-primary-foreground border-primary"
-        : "border-border text-muted-foreground hover:bg-muted",
+        ? "bg-primary text-primary-foreground border-primary shadow-sm"
+        : "bg-muted text-muted-foreground border-border hover:bg-muted/80",
     )}
   >
-    {label}
+    <span>{icon}</span>
+    <span>{label}</span>
   </button>
 );
 
@@ -222,4 +164,35 @@ function getLogIcon(category: LogEntry["category"]) {
   if (category === "incidents") return "🚨";
   if (category === "closing") return "📊";
   return "📝";
+}
+
+function getCategoryLabel(category: LogEntry["category"]) {
+  if (category === "preparation") return "Preparação";
+  if (category === "operational") return "Operacional";
+  if (category === "incidents") return "Ocorrência";
+  if (category === "closing") return "Encerramento";
+  return "Geral";
+}
+
+function getStatusLabel(status: LogEntry["status"]) {
+  if (status === "completed") return "Concluído";
+  if (status === "warning") return "Alerta";
+  if (status === "failed") return "Falhou";
+  return status;
+}
+
+function getHighlightClass(entry: LogEntry) {
+  if (entry.category === "incidents") {
+    return "border-red-300/70 bg-red-50/80";
+  }
+  if (entry.category === "closing") {
+    return "border-emerald-200/80 bg-emerald-50/70";
+  }
+  if (entry.category === "preparation") {
+    return "border-sky-200/80 bg-sky-50/70";
+  }
+  if (entry.category === "operational") {
+    return "border-violet-200/80 bg-violet-50/70";
+  }
+  return "border-border bg-background/95";
 }

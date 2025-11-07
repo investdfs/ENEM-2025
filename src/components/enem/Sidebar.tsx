@@ -6,6 +6,8 @@ interface SidebarProps {
   currentTime: string;
   currentStage: string;
   onCloseMobile?: () => void;
+  onOpenHistory: () => void;
+  onExit: () => void;
 }
 
 export const Sidebar = ({
@@ -14,6 +16,8 @@ export const Sidebar = ({
   currentTime,
   currentStage,
   onCloseMobile,
+  onOpenHistory,
+  onExit,
 }: SidebarProps) => {
   return (
     <aside className="flex h-full w-72 flex-col gap-4 border-r border-border bg-sidebar px-4 py-4 text-sm shadow-sm md:h-screen">
@@ -95,8 +99,28 @@ export const Sidebar = ({
         </div>
       )}
 
-      <div className="mt-auto pt-2 text-[8px] text-sidebar-foreground/60">
-        Use este painel como guia operacional; observe sempre os comunicados oficiais do INEP.
+      {/* Ações principais */}
+      <div className="mt-3 space-y-2">
+        <button
+          type="button"
+          onClick={onOpenHistory}
+          className="w-full rounded-md border border-sidebar-border bg-sidebar-accent px-3 py-2 text-left text-[10px] font-semibold text-sidebar-foreground hover:bg-sidebar-accent/70 hover:border-sidebar-ring transition-colors flex items-center gap-2"
+        >
+          📋 Ver Histórico Completo
+        </button>
+      </div>
+
+      <div className="mt-auto space-y-2 pt-2">
+        <button
+          type="button"
+          onClick={onExit}
+          className="w-full rounded-md border border-red-300/80 bg-red-50 px-3 py-2 text-left text-[10px] font-semibold text-red-700 hover:bg-red-100 hover:border-red-400 transition-colors flex items-center gap-2"
+        >
+          ⏏ Sair do Painel
+        </button>
+        <div className="text-[8px] text-sidebar-foreground/60">
+          Use este painel como guia operacional; observe sempre os comunicados oficiais do INEP.
+        </div>
       </div>
     </aside>
   );
