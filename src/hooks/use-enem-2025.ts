@@ -32,20 +32,33 @@ export interface LogEntry {
   timestamp: string;
 }
 
+export interface ChecklistInfoSource {
+  manual: string;
+  pagina: number;
+}
+
+export interface ChecklistInfoPopup {
+  titulo: string;
+  corpo: string;
+  fonte: ChecklistInfoSource;
+}
+
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  phase: "preparation" | "morning" | "during" | "closing" | "post";
+  role: string;
+  suggestedTime?: string | null;
+  info?: ChecklistInfoPopup;
+  critical?: boolean;
+}
+
 export interface Occurrence {
   id: number;
   type: string;
   description: string;
   critical: boolean;
   timestamp: string;
-}
-
-export interface ChecklistItem {
-  id: string;
-  text: string;
-  critical?: boolean;
-  category?: string;
-  time?: string;
 }
 
 type TabId = "preparation" | "morning" | "during" | "closing" | "report";
@@ -68,70 +81,593 @@ const STORAGE_KEY = "enem2025_state_v1";
 const STORAGE_THEME_KEY = "enem2025_theme_v1";
 const STORAGE_TAB_KEY = "enem2025_tab_v1";
 
-const criticalTimes = {
-  day1: {
-    gatesOpen: "12:00",
-    gatesClose: "13:00",
-    examStart: "13:30",
-    examEndRegular: "19:00",
+// Mapeia o JSON fornecido (simplificado aqui como constantes)
+const checklistItemsBase: ChecklistItem[] = [
+  // Preparação Prévia
+  {
+    id: "prep-01",
+    phase: "preparation",
+    text: "Receber e conferir caixas de materiais administrativos",
+    role: "Coordenador",
+    info: {
+      titulo: "Conferência completa do kit administrativo",
+      corpo:
+        "Confira se as caixas trazem todos os impressos e reservas, crachás, envelopes de sala e porta-objetos. Registre o recebimento no sistema da Aplicadora.",
+      fonte: { manual: "Coordenador", pagina: 12 },
+    },
+    critical: true,
   },
-  day2: {
-    gatesOpen: "12:00",
-    gatesClose: "13:00",
-    examStart: "13:30",
-    examEndRegular: "18:30",
+  {
+    id: "prep-02",
+    phase: "preparation",
+    text: "Separar e reservar envelopes porta-objetos (salas e equipe)",
+    role: "Coordenador",
+    info: {
+      titulo: "Envelope porta-objetos por sala e por colaborador",
+      corpo:
+        "Separe envelopes porta-objetos na quantidade exata por sala e uma cota para a equipe, evitando falta na vistoria eletrônica.",
+      fonte: { manual: "Coordenador", pagina: 12 },
+    },
   },
-} as const;
-
-const preparationItems: ChecklistItem[] = [
-  { id: "p1", text: "Recebimento de caixas de material administrativo", critical: true, category: "Material" },
-  { id: "p2", text: "Conferência de manuais do coordenador e chefes de sala", critical: true, category: "Material" },
-  { id: "p3", text: "Conferência de crachás de identificação", critical: true, category: "Material" },
-  { id: "p4", text: "Conferência de envelopes de sala", critical: true, category: "Material" },
-  { id: "p5", text: "Conferência de envelopes porta-objetos", critical: false, category: "Material" },
-  { id: "p6", text: "Conferência de folhas de rascunho", critical: false, category: "Material" },
-  { id: "p7", text: "Teste de detectores de metal", critical: true, category: "Equipamento" },
-  { id: "p8", text: "Carregamento de dispositivos (notebooks, tablets)", critical: true, category: "Equipamento" },
-  { id: "p9", text: "Teste do aplicativo no celular do coordenador", critical: true, category: "Equipamento" },
-  { id: "p10", text: "Vistoria de iluminação das salas", critical: true, category: "Local" },
-  { id: "p11", text: "Vistoria de ventilação das salas", critical: true, category: "Local" },
-  { id: "p12", text: "Vistoria de acessibilidade", critical: true, category: "Local" },
-  { id: "p13", text: "Verificação de banheiros", critical: true, category: "Local" },
-  { id: "p14", text: "Preparação da sala de coordenação", critical: false, category: "Local" },
-  { id: "p15", text: "Confirmação de local seguro para guarda de malotes", critical: true, category: "Local" },
-  { id: "p16", text: "Verificação de equipamentos para capacitação", critical: false, category: "Capacitação" },
-  { id: "p17", text: "Capacitação obrigatória do coordenador", critical: true, category: "Capacitação" },
-  { id: "p18", text: "Comunicação prévia com todos os chefes de sala", critical: true, category: "Comunicação" },
+  {
+    id: "prep-03",
+    phase: "preparation",
+    text: "Checar detectores de metais e alicate de lacre",
+    role: "Coordenador",
+    info: {
+      titulo: "Segurança e abertura de malotes",
+      corpo:
+        "Confirme funcionamento dos detectores e disponibilidade do alicate para corte de lacres; registre a quantidade no sistema.",
+      fonte: { manual: "Coordenador", pagina: 12 },
+    },
+    critical: true,
+  },
+  {
+    id: "prep-04",
+    phase: "preparation",
+    text: "Testar app interno no celular do coordenador e do assistente",
+    role: "Coordenador",
+    info: {
+      titulo: "Verificação do aplicativo",
+      corpo:
+        "Valide login e telas críticas do app indicado; falhas devem ser reportadas ainda na semana prévia.",
+      fonte: { manual: "Coordenador", pagina: 12 },
+    },
+    critical: true,
+  },
+  {
+    id: "prep-05",
+    phase: "preparation",
+    text: "Vistoriar prédio e salas (iluminação, ventilação, água, energia)",
+    role: "Coordenador",
+    info: {
+      titulo: "Vistoria geral do local",
+      corpo:
+        "Inspecione salas, banheiros, bebedouros e tomadas; ajuste a alocação conforme necessidade.",
+      fonte: { manual: "Coordenador", pagina: 13 },
+    },
+    critical: true,
+  },
+  {
+    id: "prep-06",
+    phase: "preparation",
+    text: "Garantir acessibilidade, salas especiais e sala de acompanhante",
+    role: "Coordenador",
+    info: {
+      titulo: "Acessibilidade mapeada e mobiliário adequado",
+      corpo:
+        "Verifique mobiliário acessível, salas especiais, recursos de acessibilidade e sala de acompanhante de lactante.",
+      fonte: { manual: "Coordenador", pagina: 13 },
+    },
+    critical: true,
+  },
+  {
+    id: "prep-07",
+    phase: "preparation",
+    text: "Definir Sala de Coordenação e guarda segura dos malotes",
+    role: "Coordenador",
+    info: {
+      titulo: "Coordenação próxima às salas e malotes sob guarda",
+      corpo:
+        "Defina sala de coordenação próxima às salas e local seguro, trancado, para guarda dos malotes.",
+      fonte: { manual: "Coordenador", pagina: 13 },
+    },
+    critical: true,
+  },
+  {
+    id: "prep-08",
+    phase: "preparation",
+    text: "Planejar capacitação e comunicar dress code da equipe",
+    role: "Coordenador",
+    info: {
+      titulo: "Capacitação obrigatória e orientações de vestimenta",
+      corpo:
+        "Agende capacitação, oriente sobre vestimenta e materiais obrigatórios da equipe.",
+      fonte: { manual: "Coordenador", pagina: 14 },
+    },
+  },
+  {
+    id: "prep-09",
+    phase: "preparation",
+    text: "Verificar documentação da equipe (termos e lista de presença)",
+    role: "Coordenador",
+    info: {
+      titulo: "Regularidade documental da equipe",
+      corpo:
+        "Confirme termos assinados e credenciamento; sem documentação regular, substitua o colaborador.",
+      fonte: { manual: "Coordenador", pagina: 15 },
+    },
+    critical: true,
+  },
+  {
+    id: "prep-10",
+    phase: "preparation",
+    text: "Checar fechaduras/chaves e integridade da sala-cofre dos malotes",
+    role: "Coordenador",
+    info: {
+      titulo: "Proteção física dos malotes",
+      corpo:
+        "Teste fechaduras, controle de chaves e integridade da sala dos malotes.",
+      fonte: { manual: "Coordenador", pagina: 13 },
+    },
+    critical: true,
+  },
+  {
+    id: "prep-11",
+    phase: "preparation",
+    text: "Inspecionar dispositivos de segurança e combate a incêndio",
+    role: "Coordenador",
+    info: {
+      titulo: "Segurança predial e preventiva",
+      corpo:
+        "Verifique extintores, rotas de fuga e sinalização de emergência; oriente a equipe.",
+      fonte: { manual: "Coordenador", pagina: 14 },
+    },
+  },
+  {
+    id: "prep-12",
+    phase: "preparation",
+    text: "Restringir acesso de terceiros e circulação no prédio",
+    role: "Coordenador",
+    info: {
+      titulo: "Perímetro controlado",
+      corpo:
+        "Controle acesso às áreas internas, sinalizando áreas restritas.",
+      fonte: { manual: "Coordenador", pagina: 15 },
+    },
+  },
+  {
+    id: "prep-13",
+    phase: "preparation",
+    text: "Organizar numeração e identificação oficial das salas",
+    role: "Coordenador",
+    info: {
+      titulo: "Sinalização e distribuição por sala",
+      corpo:
+        "Numere e identifique as salas conforme orientações oficiais.",
+      fonte: { manual: "Coordenador", pagina: 13 },
+    },
+  },
+  {
+    id: "prep-14",
+    phase: "preparation",
+    text: "Definir plano de contingência (energia, incidentes, comunicação)",
+    role: "Coordenador",
+    info: {
+      titulo: "Procedimentos para imprevistos",
+      corpo:
+        "Planeje ações para falta de energia, ruídos, incidentes médicos e logística.",
+      fonte: { manual: "Coordenador", pagina: 15 },
+    },
+    critical: true,
+  },
+  {
+    id: "prep-15",
+    phase: "preparation",
+    text: "Testar relógios analógicos e cronômetros das salas",
+    role: "Coordenador",
+    info: {
+      titulo: "Sincronização de tempo",
+      corpo:
+        "Garanta marcadores de tempo sincronizados ao horário de Brasília.",
+      fonte: { manual: "Chefe de Sala", pagina: 2 },
+    },
+  },
+  {
+    id: "prep-16",
+    phase: "preparation",
+    text: "Planejar comunicação via fiscal volante e assistente",
+    role: "Coordenador",
+    info: {
+      titulo: "Canal rápido de apoio às salas",
+      corpo:
+        "Use fiscal volante como canal entre Coordenação e salas, definindo rotas e sinais.",
+      fonte: { manual: "Coordenador", pagina: 20 },
+    },
+  },
+  // Manhã (pré-portões) e Portões/Malotes
+  {
+    id: "manha-01",
+    phase: "morning",
+    text: "Chegada do coordenador e assistente (08:00)",
+    role: "Coordenador",
+    suggestedTime: "08:00",
+    info: {
+      titulo: "Início formal das atividades no local",
+      corpo:
+        "Coordenador e assistente chegam às 8h, organizam materiais e recebem certificador.",
+      fonte: { manual: "Coordenador", pagina: 15 },
+    },
+    critical: true,
+  },
+  {
+    id: "manha-02",
+    phase: "morning",
+    text: "Chegada da equipe (09:00 no 1º dia; 09:30 no 2º)",
+    role: "Coordenador",
+    suggestedTime: "09:00/09:30",
+    info: {
+      titulo: "Ponto de encontro e presença",
+      corpo:
+        "Confirme presença, substitua ausentes e faça minicapacitação com reforço de procedimentos.",
+      fonte: { manual: "Coordenador", pagina: 15 },
+    },
+    critical: true,
+  },
+  {
+    id: "manha-03",
+    phase: "morning",
+    text: "Distribuir materiais às salas (envelopes, reservas, crachás)",
+    role: "Coordenador",
+    suggestedTime: "09:30",
+    info: {
+      titulo: "Kits completos por sala",
+      corpo:
+        "Entregue envelopes às salas com recibo e conferência pelos chefes de sala.",
+      fonte: { manual: "Coordenador", pagina: 15 },
+    },
+    critical: true,
+  },
+  {
+    id: "portoes-01",
+    phase: "morning",
+    text: "Abrir portões (12:00) e fechar (13:00)",
+    role: "Coordenador",
+    suggestedTime: "12:00 / 13:00",
+    info: {
+      titulo: "Controle de acesso no horário de Brasília",
+      corpo:
+        "Abra às 12h e feche às 13h, seguindo horário de Brasília, antes da abertura de malotes.",
+      fonte: { manual: "Coordenador", pagina: 11 },
+    },
+    critical: true,
+  },
+  {
+    id: "portoes-02",
+    phase: "morning",
+    text: "Abrir malotes (após 13:00) e distribuir envelopes/provas",
+    role: "Coordenador",
+    suggestedTime: "13:00+",
+    info: {
+      titulo: "Integridade e distribuição nominal",
+      corpo:
+        "Abra malotes após 13h, confira integridade e distribua provas às salas.",
+      fonte: { manual: "Coordenador", pagina: 42 },
+    },
+    critical: true,
+  },
+  // Durante a Prova (exec-*)
+  {
+    id: "exec-01",
+    phase: "during",
+    text: "Supervisionar início das provas (13:30) e avisos obrigatórios",
+    role: "Coordenador",
+    suggestedTime: "13:30",
+    info: {
+      titulo: "Ritual de abertura em sala",
+      corpo:
+        "Garanta início às 13h30 com leitura dos avisos e marcador de tempo visível.",
+      fonte: { manual: "Chefe de Sala", pagina: 2 },
+    },
+    critical: true,
+  },
+  {
+    id: "exec-02",
+    phase: "during",
+    text: "Supervisionar identificação e conferência de documentos",
+    role: "Coordenador",
+    info: {
+      titulo: "Documentos aceitos e procedimentos",
+      corpo:
+        "Supervisione conferência de documentos, uso de envelopes porta-objetos e detector de metais.",
+      fonte: { manual: "Chefe de Sala", pagina: 4 },
+    },
+  },
+  {
+    id: "exec-03",
+    phase: "during",
+    text: "Supervisionar envelopes porta-objetos e vistorias",
+    role: "Coordenador",
+    info: {
+      titulo: "Itens obrigatórios no envelope",
+      corpo:
+        "Garanta correta guarda de celulares e eletrônicos nos envelopes.",
+      fonte: { manual: "Chefe de Sala", pagina: 4 },
+    },
+    critical: true,
+  },
+  {
+    id: "exec-04",
+    phase: "during",
+    text: "Supervisionar controle de horários e saídas",
+    role: "Coordenador",
+    info: {
+      titulo: "Marcos de tempo e saídas",
+      corpo:
+        "Monitore regras de saída sem/com caderno e término normal.",
+      fonte: { manual: "Coordenador", pagina: 11 },
+    },
+  },
+  {
+    id: "exec-05",
+    phase: "during",
+    text: "Gerir Sala Extra e participantes fora do cadastro",
+    role: "Coordenador",
+    suggestedTime: "14:20",
+    info: {
+      titulo: "Direcionamento e reporte",
+      corpo:
+        "Gerencie Sala Extra e comunique ausentes e casos especiais à Aplicadora.",
+      fonte: { manual: "Coordenador", pagina: 37 },
+    },
+  },
+  {
+    id: "exec-06",
+    phase: "during",
+    text: "Supervisionar procedimentos de segurança e detector de metais",
+    role: "Coordenador",
+    suggestedTime: "13:45",
+    info: {
+      titulo: "Fluxo de vistoria",
+      corpo:
+        "Acompanhe vistorias eletrônicas e procedimentos com lanches/medicamentos.",
+      fonte: { manual: "Chefe de Sala", pagina: 5 },
+    },
+  },
+  {
+    id: "exec-07",
+    phase: "during",
+    text: "Distribuir envelopes com recibo assinado pelo Chefe de Sala",
+    role: "Coordenador",
+    suggestedTime: "13:05",
+    info: {
+      titulo: "Controle formal de entrega",
+      corpo:
+        "Registre recibos de entrega dos envelopes às salas.",
+      fonte: { manual: "Coordenador", pagina: 15 },
+    },
+  },
+  {
+    id: "exec-08",
+    phase: "during",
+    text: "Preencher Termo de Abertura dos Malotes",
+    role: "Coordenador",
+    suggestedTime: "13:00–13:20",
+    info: {
+      titulo: "Registro de integridade dos malotes",
+      corpo:
+        "Registre horários, lacres e assinaturas no termo.",
+      fonte: { manual: "Coordenador", pagina: 42 },
+    },
+    critical: true,
+  },
+  {
+    id: "exec-09",
+    phase: "during",
+    text: "Acompanhar fiscais volantes e assistentes",
+    role: "Coordenador",
+    info: {
+      titulo: "Fluxo de apoio contínuo",
+      corpo:
+        "Monitore deslocamentos e atendimentos às salas.",
+      fonte: { manual: "Coordenador", pagina: 20 },
+    },
+  },
+  {
+    id: "exec-10",
+    phase: "during",
+    text:
+      "Monitorar salas com atendimento especializado (tempo adicional, lactantes, TEA/DNV)",
+    role: "Coordenador",
+    info: {
+      titulo: "Garantia de condições específicas",
+      corpo:
+        "Verifique tempo adicional, lactantes e demais recursos especializados.",
+      fonte: { manual: "Coordenador", pagina: 38 },
+    },
+    critical: true,
+  },
+  {
+    id: "exec-11",
+    phase: "during",
+    text: "Supervisionar leitura de avisos obrigatórios nos marcos de tempo",
+    role: "Coordenador",
+    info: {
+      titulo: "Avisos marcados no quadro",
+      corpo:
+        "Garanta leitura de avisos nos marcos (2h, 60min, 15min).",
+      fonte: { manual: "Chefe de Sala", pagina: 2 },
+    },
+  },
+  {
+    id: "exec-12",
+    phase: "during",
+    text: "Registrar e validar ocorrências em ata/sistema em tempo real",
+    role: "Coordenador",
+    info: {
+      titulo: "Rastreabilidade e transparência",
+      corpo:
+        "Registre ocorrências como documentação irregular, incidentes de saúde, etc.",
+      fonte: { manual: "Coordenador", pagina: 57 },
+    },
+    critical: true,
+  },
+  {
+    id: "exec-13",
+    phase: "during",
+    text: "Autorizar/acompanhar idas ao banheiro via fiscal volante",
+    role: "Coordenador",
+    info: {
+      titulo: "Controle de deslocamentos",
+      corpo:
+        "Mantenha controle de entradas/saídas com apoio do fiscal volante.",
+      fonte: { manual: "Chefe de Sala", pagina: 3 },
+    },
+  },
+  {
+    id: "exec-14",
+    phase: "during",
+    text: "Comunicar avisos gerais quando necessário",
+    role: "Coordenador",
+    info: {
+      titulo: "Comando central",
+      corpo:
+        "Use avisos centralizados para orientações importantes, sem ruído excessivo.",
+      fonte: { manual: "Coordenador", pagina: 11 },
+    },
+  },
+  // Encerramento (enc-*)
+  {
+    id: "enc-01",
+    phase: "closing",
+    text: "Recolher materiais e conferir assinaturas/listas",
+    role: "Coordenador",
+    info: {
+      titulo: "Fechamento administrativo das salas",
+      corpo:
+        "Recolha cartões, folhas, atas e listas com assinaturas e contagens corretas.",
+      fonte: { manual: "Coordenador", pagina: 57 },
+    },
+    critical: true,
+  },
+  {
+    id: "enc-02",
+    phase: "closing",
+    text: "Fechar e lacrar malotes",
+    role: "Coordenador",
+    info: {
+      titulo: "Integridade do lacre e conferência",
+      corpo:
+        "Lacre malotes com conferência de volumes e numeração.",
+      fonte: { manual: "Coordenador", pagina: 63 },
+    },
+    critical: true,
+  },
+  {
+    id: "enc-03",
+    phase: "closing",
+    text: "Verificar lacres antes da devolução",
+    role: "Coordenador",
+    info: {
+      titulo: "Conferência final de segurança",
+      corpo:
+        "Confira todos os lacres e numerações; registre divergências.",
+      fonte: { manual: "Coordenador", pagina: 63 },
+    },
+  },
+  {
+    id: "enc-04",
+    phase: "closing",
+    text: "Preencher e assinar Termo de Encerramento da Aplicação",
+    role: "Coordenador",
+    info: {
+      titulo: "Fechamento formal do dia",
+      corpo:
+        "Registre horários, volumes, ocorrências e assinaturas no termo final.",
+      fonte: { manual: "Coordenador", pagina: 60 },
+    },
+    critical: true,
+  },
+  {
+    id: "enc-05",
+    phase: "closing",
+    text: "Conferir assinaturas dos chefes de sala",
+    role: "Coordenador",
+    info: {
+      titulo: "Documentação completa",
+      corpo:
+        "Garanta assinaturas em todas as atas e listas.",
+      fonte: { manual: "Coordenador", pagina: 57 },
+    },
+  },
+  {
+    id: "enc-06",
+    phase: "closing",
+    text: "Conferir devolução de detectores e equipamentos",
+    role: "Coordenador",
+    info: {
+      titulo: "Controle de bens",
+      corpo:
+        "Registre devolução e estado de equipamentos.",
+      fonte: { manual: "Coordenador", pagina: 60 },
+    },
+  },
+  {
+    id: "enc-07",
+    phase: "closing",
+    text: "Conferir lista de volumes e emitir recibo de entrega",
+    role: "Coordenador",
+    info: {
+      titulo: "Rastreio da remessa",
+      corpo:
+        "Liste volumes, confira e gere recibo com assinatura do recebedor.",
+      fonte: { manual: "Coordenador", pagina: 63 },
+    },
+  },
+  {
+    id: "enc-08",
+    phase: "closing",
+    text: "Registrar ocorrências operacionais (energia, barulho, logística)",
+    role: "Coordenador",
+    info: {
+      titulo: "Lições para o próximo dia",
+      corpo:
+        "Registre problemas e soluções para orientar próximas aplicações.",
+      fonte: { manual: "Coordenador", pagina: 60 },
+    },
+  },
+  {
+    id: "enc-09",
+    phase: "closing",
+    text: "Feedback rápido com chefes de sala (debriefing)",
+    role: "Coordenador",
+    info: {
+      titulo: "Alinhamento final",
+      corpo:
+        "Reúna chefes de sala para revisar incidentes e ações.",
+      fonte: { manual: "Coordenador", pagina: 61 },
+    },
+  },
+  {
+    id: "enc-10",
+    phase: "closing",
+    text: "Verificar fechamento das salas e condições do prédio",
+    role: "Coordenador",
+    info: {
+      titulo: "Encerramento do local",
+      corpo:
+        "Confirme salas vazias, trancadas e prédio em condições adequadas.",
+      fonte: { manual: "Coordenador", pagina: 64 },
+    },
+  },
 ];
 
-const morningItems: ChecklistItem[] = [
-  { id: "m1", time: "08:00", text: "Chegada do coordenador ao local", critical: true },
-  { id: "m2", time: "08:30", text: "Recebimento do certificador INEP", critical: true },
-  { id: "m3", time: "09:00", text: "Chegada da equipe (1º dia) ou 09:30 (2º dia)", critical: true },
-  { id: "m4", time: "09:00", text: "Verificação de documentação da equipe", critical: true },
-  { id: "m5", time: "09:15", text: "Substituição de ausentes (prazo limite 1º dia)", critical: true },
-  { id: "m6", time: "09:45", text: "Substituição de ausentes (prazo limite 2º dia)", critical: true },
-  { id: "m7", time: "10:00", text: "Lacre dos envelopes porta-objetos", critical: false },
-  { id: "m8", time: "10:30", text: "Recebimento de malotes das salas", critical: true },
-  { id: "m9", time: "11:00", text: "Abertura e conferência de malotes", critical: true },
-  { id: "m10", time: "11:30", text: "Capacitação rápida da equipe (1h30)", critical: true },
-  { id: "m11", time: "11:45", text: "Preparação final das salas", critical: true },
-  { id: "m12", time: "12:00", text: "ABERTURA DOS PORTÕES", critical: true },
-  { id: "m13", time: "13:00", text: "FECHAMENTO DOS PORTÕES", critical: true },
-];
-
-const closingItems: ChecklistItem[] = [
-  { id: "c1", text: "Recolhimento de materiais de todas as salas", critical: true },
-  { id: "c2", text: "Conferência de cartões-resposta", critical: true },
-  { id: "c3", text: "Conferência de folhas de redação", critical: true },
-  { id: "c4", text: "Contagem final de participantes presentes", critical: true },
-  { id: "c5", text: "Contagem final de participantes ausentes", critical: true },
-  { id: "c6", text: "Lacre de todos os malotes", critical: true },
-  { id: "c7", text: "Registro de ocorrências finais no sistema", critical: true },
-  { id: "c8", text: "Assinatura de documentos pelo coordenador", critical: true },
-  { id: "c9", text: "Devolução de materiais à instituição aplicadora", critical: true },
-  { id: "c10", text: "Preenchimento do relatório final", critical: true },
-];
+const preparationItems = checklistItemsBase.filter(
+  (i) => i.phase === "preparation",
+);
+const morningItems = checklistItemsBase.filter((i) => i.phase === "morning");
+const duringItems = checklistItemsBase.filter((i) => i.phase === "during");
+const closingItems = checklistItemsBase.filter((i) => i.phase === "closing");
 
 function formatNow() {
   return new Date().toLocaleString("pt-BR", {
@@ -217,7 +753,6 @@ export function useEnem2025() {
   const [theme, setTheme] = useState<"light" | "dark">(() => safeLoadTheme());
   const [firedAlerts, setFiredAlerts] = useState<Record<string, boolean>>({});
 
-  // Relógio (1s é ok para UX; se quiser mais leve, troque para 5000)
   useEffect(() => {
     const timer = setInterval(() => {
       setNow(new Date());
@@ -225,7 +760,6 @@ export function useEnem2025() {
     return () => clearInterval(timer);
   }, []);
 
-  // Aplicar tema na <html>
   useEffect(() => {
     if (typeof document !== "undefined") {
       document.documentElement.classList.toggle("dark", theme === "dark");
@@ -233,7 +767,6 @@ export function useEnem2025() {
     }
   }, [theme]);
 
-  // Persistir estado (exceto coisas derivadas)
   useEffect(() => {
     if (typeof window === "undefined") return;
     const toStore: EnemState = {
@@ -249,7 +782,6 @@ export function useEnem2025() {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));
   }, [state]);
 
-  // Persistir aba ativa
   function setActiveTab(tab: TabId) {
     setActiveTabState(tab);
     if (typeof window !== "undefined") {
@@ -259,7 +791,19 @@ export function useEnem2025() {
 
   const currentTimes = useMemo(() => {
     if (!state.coordinator) return null;
-    return criticalTimes[`day${state.coordinator.examDay}` as "day1" | "day2"];
+    return state.coordinator.examDay === 1
+      ? {
+          gatesOpen: "12:00",
+          gatesClose: "13:00",
+          examStart: "13:30",
+          examEndRegular: "19:00",
+        }
+      : {
+          gatesOpen: "12:00",
+          gatesClose: "13:00",
+          examStart: "13:30",
+          examEndRegular: "18:30",
+        };
   }, [state.coordinator]);
 
   const currentStage = useMemo(() => {
@@ -284,7 +828,7 @@ export function useEnem2025() {
     ).padStart(2, "0")}`;
   }, [now, currentTimes]);
 
-  // Alertas automáticos baseados em horário (simples e não invasivo)
+  // Alertas automáticos (mantidos)
   useEffect(() => {
     if (!state.coordinator || !currentTimes) return;
 
@@ -329,24 +873,7 @@ export function useEnem2025() {
     });
   }, [now, currentTimes, state.coordinator, firedAlerts]);
 
-  // Ações
-
-  function initializeCoordinator(payload: CoordinatorData) {
-    const toastId = showLoading("Iniciando sistema...");
-    const coord: CoordinatorData = { ...payload };
-    setState((prev) => ({
-      ...prev,
-      coordinator: coord,
-    }));
-    dismissToast(String(toastId));
-    showSuccess(`Bem-vinda(o), ${coord.name}! Sistema pronto para o ENEM.`);
-  }
-
-  function toggleTheme() {
-    setTheme((prev) => (prev === "light" ? "dark" : "light"));
-    showSuccess(`Tema ${theme === "light" ? "escuro" : "claro"} ativado.`);
-  }
-
+  // Logs
   function addLog(name: string, category: LogCategory, status: LogStatus) {
     setState((prev) => ({
       ...prev,
@@ -368,25 +895,42 @@ export function useEnem2025() {
     }));
   }
 
+  // Ações públicas
+
+  function initializeCoordinator(payload: CoordinatorData) {
+    const toastId = showLoading("Iniciando sistema...");
+    setState((prev) => ({
+      ...prev,
+      coordinator: { ...payload },
+    }));
+    dismissToast(String(toastId));
+    showSuccess(`Bem-vinda(o), ${payload.name}! Sistema pronto para o ENEM.`);
+  }
+
+  function toggleTheme() {
+    setTheme((prev) => (prev === "light" ? "dark" : "light"));
+    showSuccess(`Tema ${theme === "light" ? "escuro" : "claro"} ativado.`);
+  }
+
   function toggleChecklistItem(
     list: "preparation" | "morning" | "closing",
     itemId: string,
   ) {
-    const dataSource =
+    const source =
       list === "preparation"
         ? preparationItems
         : list === "morning"
         ? morningItems
         : closingItems;
-    const item = dataSource.find((i) => i.id === itemId);
+    const item = source.find((i) => i.id === itemId);
     if (!item) return;
 
     setState((prev) => {
-      const listValues = prev[list];
-      const isChecked = listValues.includes(itemId);
+      const current = prev[list];
+      const isChecked = current.includes(itemId);
       const nextList = isChecked
-        ? listValues.filter((id) => id !== itemId)
-        : [...listValues, itemId];
+        ? current.filter((id) => id !== itemId)
+        : [...current, itemId];
 
       if (!isChecked) {
         const category: LogCategory =
@@ -403,17 +947,6 @@ export function useEnem2025() {
         [list]: nextList,
       };
     });
-
-    if (list === "preparation" && !state.preparation.includes(itemId)) {
-      const remaining = preparationItems.filter(
-        (i) => !state.preparation.includes(i.id) && i.id !== itemId,
-      );
-      if (remaining.length === 0) {
-        showSuccess("Preparação completa! Todas as tarefas foram concluídas.");
-      } else {
-        showSuccess("Tarefa de preparação concluída.");
-      }
-    }
   }
 
   function setNote(id: string, value: string) {
@@ -542,6 +1075,7 @@ Ocorrências: ${state.occurrences.length} (Críticas: ${criticalOccurrences})
     examTimeRemaining,
     preparationItems,
     morningItems,
+    duringItems,
     closingItems,
     initializeCoordinator,
     toggleTheme,
