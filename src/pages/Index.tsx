@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useEnem2025 } from "@/hooks/use-enem-2025";
 import { SetupModal } from "@/components/enem/SetupModal";
 import { Sidebar } from "@/components/enem/Sidebar";
@@ -19,7 +20,6 @@ const Index = () => {
     activeTab,
     setActiveTab,
     currentStage,
-    currentTimes,
     examTimeRemaining,
     preparationItems,
     morningItems,
@@ -32,6 +32,8 @@ const Index = () => {
     resetAll,
     downloadTextReport,
   } = useEnem2025();
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const coordinator = state.coordinator;
 
@@ -48,32 +50,54 @@ const Index = () => {
       : "09 de novembro de 2025";
 
   return (
-    <div className={cn("min-h-screen bg-background text-foreground", theme === "dark" && "dark")}>
-      {/* Modal de setup inicial */}
+    <div
+      className={cn(
+        "min-h-screen bg-background text-foreground",
+        theme === "dark" && "dark",
+      )}
+    >
       <SetupModal open={!coordinator} onSubmit={initializeCoordinator} />
 
       {coordinator && (
         <div className="flex flex-col md:flex-row">
-          <Sidebar
-            coordinator={coordinator}
-            occurrences={state.occurrences}
-            currentTime={formattedNow}
-            currentStage={currentStage}
-          />
+          {/* Sidebar - fixa no desktop, toggle no mobile */}
+          <div
+            className={cn(
+              "md:block",
+              sidebarOpen ? "block" : "hidden",
+              "md:static fixed inset-y-0 left-0 z-40 bg-background/95 backdrop-blur md:bg-transparent",
+            )}
+          >
+            <Sidebar
+              coordinator={coordinator}
+              occurrences={state.occurrences}
+              currentTime={formattedNow}
+              currentStage={currentStage}
+            />
+          </div>
 
           <main className="flex-1 min-h-screen flex flex-col">
-            <header className="px-4 md:px-6 pt-4 pb-3 border-b bg-card flex flex-col gap-1">
+            <header className="px-4 md:px-6 pt-3 pb-2 border-b bg-card flex flex-col gap-1">
               <div className="flex items-center justify-between gap-2">
-                <div>
-                  <h1 className="text-xl md:text-2xl font-semibold">
-                    Sistema de Gestão ENEM 2025
-                  </h1>
-                  <p className="text-xs text-muted-foreground">
-                    Coordenação de Local de Prova
-                  </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    className="md:hidden inline-flex items-center justify-center h-8 w-8 rounded-md border bg-background hover:bg-muted text-xs"
+                    onClick={() => setSidebarOpen((v) => !v)}
+                    aria-label="Alternar painel lateral"
+                  >
+                    ☰
+                  </button>
+                  <div>
+                    <h1 className="text-xl md:text-2xl font-semibold">
+                      Sistema de Gestão ENEM 2025
+                    </h1>
+                    <p className="text-xs text-muted-foreground">
+                      Coordenação de Local de Prova
+                    </p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="hidden sm:inline text-[10px] text-muted-foreground">
                     {examDateLabel}
                   </span>
                   <Button
@@ -81,21 +105,31 @@ const Index = () => {
                     variant="outline"
                     className="h-8 w-8 text-xs"
                     onClick={toggleTheme}
+                    aria-label="Alternar tema claro/escuro"
                   >
                     {theme === "dark" ? "☀️" : "🌙"}
                   </Button>
                 </div>
               </div>
               <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                <div>
+                <div className="truncate">
                   Local:{" "}
                   <span className="font-medium">
-                    {coordinator.location} - {coordinator.city}/{coordinator.state}
+                    {coordinator.location} - {coordinator.city}/
+                    {coordinator.state}
                   </span>
                 </div>
-                <div>
-                  Horário Brasília:{" "}
-                  <span className="font-mono">{formattedNow}</span>
+                <div className="flex items-center gap-2">
+                  <span>
+                    Etapa:{" "}
+                    <span className="font-semibold text-primary">
+                      {currentStage}
+                    </span>
+                  </span>
+                  <span>
+                    Horário Brasília:{" "}
+                    <span className="font-mono">{formattedNow}</span>
+                  </span>
                 </div>
               </div>
             </header>
@@ -104,31 +138,26 @@ const Index = () => {
             <div className="px-4 md:px-6 pt-2 border-b bg-card/80 backdrop-blur">
               <div className="flex items-center gap-1 overflow-x-auto pb-1">
                 <TabButton
-                  id="preparation"
                   label="📋 Preparação Prévia"
                   active={activeTab === "preparation"}
                   onClick={() => setActiveTab("preparation")}
                 />
                 <TabButton
-                  id="morning"
                   label="🌅 Manhã do Exame"
                   active={activeTab === "morning"}
                   onClick={() => setActiveTab("morning")}
                 />
                 <TabButton
-                  id="during"
                   label="📝 Durante a Aplicação"
                   active={activeTab === "during"}
                   onClick={() => setActiveTab("during")}
                 />
                 <TabButton
-                  id="closing"
                   label="🔒 Encerramento"
                   active={activeTab === "closing"}
                   onClick={() => setActiveTab("closing")}
                 />
                 <TabButton
-                  id="report"
                   label="📊 Relatório Final"
                   active={activeTab === "report"}
                   onClick={() => setActiveTab("report")}
@@ -136,10 +165,19 @@ const Index = () => {
                 <div className="flex-1" />
                 <Button
                   size="sm"
+                  variant="outline"
                   className="hidden md:inline-flex"
                   onClick={downloadTextReport}
                 >
                   📄 Exportar Relatório
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="hidden md:inline-flex text-red-600"
+                  onClick={resetAll}
+                >
+                  🔄 Reiniciar
                 </Button>
               </div>
             </div>
@@ -201,7 +239,6 @@ const Index = () => {
             </div>
           </main>
 
-          {/* Log Panel */}
           <LogPanel log={state.log} />
         </div>
       )}
@@ -210,7 +247,6 @@ const Index = () => {
 };
 
 interface TabButtonProps {
-  id: string;
   label: string;
   active: boolean;
   onClick: () => void;
@@ -220,7 +256,7 @@ const TabButton = ({ label, active, onClick }: TabButtonProps) => (
   <button
     onClick={onClick}
     className={cn(
-      "px-2.5 py-1.5 rounded-md text-[10px] whitespace-nowrap border-b-2",
+      "px-2.5 py-1.5 rounded-md text-[10px] whitespace-nowrap border-b-2 transition-colors",
       active
         ? "border-primary text-primary font-semibold bg-muted/60"
         : "border-transparent text-muted-foreground hover:bg-muted/40",

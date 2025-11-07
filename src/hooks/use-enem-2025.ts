@@ -64,6 +64,10 @@ interface EnemState {
   log: LogEntry[];
 }
 
+const STORAGE_KEY = "enem2025_state_v1";
+const STORAGE_THEME_KEY = "enem2025_theme_v1";
+const STORAGE_TAB_KEY = "enem2025_tab_v1";
+
 const criticalTimes = {
   day1: {
     gatesOpen: "12:00",
@@ -135,29 +139,85 @@ function formatNow() {
   });
 }
 
-function parseTimeToDate(time: string) {
+function parseTimeToToday(time: string) {
   const [h, m] = time.split(":").map(Number);
   const d = new Date();
   d.setHours(h, m, 0, 0);
   return d;
 }
 
+function safeLoadState(): EnemState {
+  if (typeof window === "undefined") {
+    return {
+      coordinator: null,
+      preparation: [],
+      morning: [],
+      closing: [],
+      occurrences: [],
+      stats: { present: 0, absent: 0 },
+      notes: {},
+      log: [],
+    };
+  }
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      return {
+        coordinator: null,
+        preparation: [],
+        morning: [],
+        closing: [],
+        occurrences: [],
+        stats: { present: 0, absent: 0 },
+        notes: {},
+        log: [],
+      };
+    }
+    const parsed = JSON.parse(raw) as EnemState;
+    return {
+      coordinator: parsed.coordinator ?? null,
+      preparation: parsed.preparation ?? [],
+      morning: parsed.morning ?? [],
+      closing: parsed.closing ?? [],
+      occurrences: parsed.occurrences ?? [],
+      stats: parsed.stats ?? { present: 0, absent: 0 },
+      notes: parsed.notes ?? {},
+      log: parsed.log ?? [],
+    };
+  } catch {
+    return {
+      coordinator: null,
+      preparation: [],
+      morning: [],
+      closing: [],
+      occurrences: [],
+      stats: { present: 0, absent: 0 },
+      notes: {},
+      log: [],
+    };
+  }
+}
+
+function safeLoadTheme(): "light" | "dark" {
+  if (typeof window === "undefined") return "light";
+  const stored = window.localStorage.getItem(STORAGE_THEME_KEY);
+  return stored === "dark" ? "dark" : "light";
+}
+
+function safeLoadTab(): TabId {
+  if (typeof window === "undefined") return "preparation";
+  const stored = window.localStorage.getItem(STORAGE_TAB_KEY) as TabId | null;
+  return stored || "preparation";
+}
+
 export function useEnem2025() {
-  const [state, setState] = useState<EnemState>({
-    coordinator: null,
-    preparation: [],
-    morning: [],
-    closing: [],
-    occurrences: [],
-    stats: { present: 0, absent: 0 },
-    notes: {},
-    log: [],
-  });
-
-  const [activeTab, setActiveTab] = useState<TabId>("preparation");
+  const [state, setState] = useState<EnemState>(() => safeLoadState());
+  const [activeTab, setActiveTabState] = useState<TabId>(() => safeLoadTab());
   const [now, setNow] = useState<Date>(new Date());
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [theme, setTheme] = useState<"light" | "dark">(() => safeLoadTheme());
+  const [firedAlerts, setFiredAlerts] = useState<Record<string, boolean>>({});
 
+  // Relógio (1s é ok para UX; se quiser mais leve, troque para 5000)
   useEffect(() => {
     const timer = setInterval(() => {
       setNow(new Date());
@@ -165,9 +225,37 @@ export function useEnem2025() {
     return () => clearInterval(timer);
   }, []);
 
+  // Aplicar tema na <html>
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
+    if (typeof document !== "undefined") {
+      document.documentElement.classList.toggle("dark", theme === "dark");
+      window.localStorage.setItem(STORAGE_THEME_KEY, theme);
+    }
   }, [theme]);
+
+  // Persistir estado (exceto coisas derivadas)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const toStore: EnemState = {
+      coordinator: state.coordinator,
+      preparation: state.preparation,
+      morning: state.morning,
+      closing: state.closing,
+      occurrences: state.occurrences,
+      stats: state.stats,
+      notes: state.notes,
+      log: state.log,
+    };
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));
+  }, [state]);
+
+  // Persistir aba ativa
+  function setActiveTab(tab: TabId) {
+    setActiveTabState(tab);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(STORAGE_TAB_KEY, tab);
+    }
+  }
 
   const currentTimes = useMemo(() => {
     if (!state.coordinator) return null;
@@ -185,7 +273,7 @@ export function useEnem2025() {
 
   const examTimeRemaining = useMemo(() => {
     if (!currentTimes) return "--:--:--";
-    const end = parseTimeToDate(currentTimes.examEndRegular);
+    const end = parseTimeToToday(currentTimes.examEndRegular);
     if (now >= end || now.getHours() < 13) return "--:--:--";
     const diff = end.getTime() - now.getTime();
     const h = Math.floor(diff / 3600000);
@@ -196,6 +284,53 @@ export function useEnem2025() {
     ).padStart(2, "0")}`;
   }, [now, currentTimes]);
 
+  // Alertas automáticos baseados em horário (simples e não invasivo)
+  useEffect(() => {
+    if (!state.coordinator || !currentTimes) return;
+
+    const alertsConfig = [
+      {
+        id: "gatesOpen",
+        time: currentTimes.gatesOpen,
+        minutesBefore: 10,
+        message: "Lembrete: abertura dos portões em 10 minutos.",
+      },
+      {
+        id: "gatesClose",
+        time: currentTimes.gatesClose,
+        minutesBefore: 10,
+        message: "Lembrete: fechamento dos portões em 10 minutos.",
+      },
+      {
+        id: "examStart",
+        time: currentTimes.examStart,
+        minutesBefore: 5,
+        message: "Lembrete: início das provas em 5 minutos.",
+      },
+      {
+        id: "examEnd",
+        time: currentTimes.examEndRegular,
+        minutesBefore: 15,
+        message: "Lembrete: término previsto das provas em 15 minutos.",
+      },
+    ] as const;
+
+    alertsConfig.forEach((cfg) => {
+      const key = `${cfg.id}_${state.coordinator?.examDay}`;
+      if (firedAlerts[key]) return;
+
+      const target = parseTimeToToday(cfg.time);
+      const diffMinutes = (target.getTime() - now.getTime()) / 60000;
+
+      if (diffMinutes <= cfg.minutesBefore && diffMinutes > cfg.minutesBefore - 1.2) {
+        setFiredAlerts((prev) => ({ ...prev, [key]: true }));
+        showSuccess(cfg.message);
+      }
+    });
+  }, [now, currentTimes, state.coordinator, firedAlerts]);
+
+  // Ações
+
   function initializeCoordinator(payload: CoordinatorData) {
     const toastId = showLoading("Iniciando sistema...");
     const coord: CoordinatorData = { ...payload };
@@ -203,7 +338,6 @@ export function useEnem2025() {
       ...prev,
       coordinator: coord,
     }));
-    // garantir que o ID seja tratado como string para o dismiss
     dismissToast(String(toastId));
     showSuccess(`Bem-vinda(o), ${coord.name}! Sistema pronto para o ENEM.`);
   }
@@ -271,13 +405,13 @@ export function useEnem2025() {
     });
 
     if (list === "preparation" && !state.preparation.includes(itemId)) {
-      const next = preparationItems.find(
+      const remaining = preparationItems.filter(
         (i) => !state.preparation.includes(i.id) && i.id !== itemId,
       );
-      if (next) {
-        showSuccess("Tarefa concluída");
-      } else {
+      if (remaining.length === 0) {
         showSuccess("Preparação completa! Todas as tarefas foram concluídas.");
+      } else {
+        showSuccess("Tarefa de preparação concluída.");
       }
     }
   }
@@ -318,7 +452,7 @@ export function useEnem2025() {
       occ.critical ? "warning" : "completed",
     );
     if (occ.critical) {
-      showError(`Ocorrência crítica: ${occ.type}`);
+      showError(`Ocorrência crítica registrada: ${occ.type}`);
     } else {
       showSuccess("Ocorrência registrada.");
     }
@@ -335,6 +469,11 @@ export function useEnem2025() {
       notes: {},
       log: [],
     });
+    setFiredAlerts({});
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(STORAGE_KEY);
+      window.localStorage.removeItem(STORAGE_TAB_KEY);
+    }
     showSuccess("Sistema reiniciado.");
   }
 
