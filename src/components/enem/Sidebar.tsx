@@ -7,7 +7,9 @@ interface SidebarProps {
   currentStage: string;
   onCloseMobile?: () => void;
   onOpenHistory: () => void;
+  onBackToPanel?: () => void;
   onExit: () => void;
+  showBackToPanel?: boolean;
 }
 
 export const Sidebar = ({
@@ -17,7 +19,9 @@ export const Sidebar = ({
   currentStage,
   onCloseMobile,
   onOpenHistory,
+  onBackToPanel,
   onExit,
+  showBackToPanel,
 }: SidebarProps) => {
   return (
     <aside className="flex h-full w-72 flex-col gap-4 border-r border-border bg-sidebar px-4 py-4 text-sm shadow-sm md:h-screen">
@@ -108,6 +112,16 @@ export const Sidebar = ({
         >
           📋 Ver Histórico Completo
         </button>
+
+        {showBackToPanel && onBackToPanel && (
+          <button
+            type="button"
+            onClick={onBackToPanel}
+            className="w-full rounded-md border border-primary/40 bg-primary/5 px-3 py-2 text-left text-[10px] font-semibold text-primary hover:bg-primary/10 hover:border-primary transition-colors flex items-center gap-2"
+          >
+            ⬅ Voltar ao Painel
+          </button>
+        )}
       </div>
 
       <div className="mt-auto space-y-2 pt-2">

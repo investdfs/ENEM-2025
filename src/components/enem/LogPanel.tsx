@@ -11,10 +11,9 @@ type CategoryFilter =
 
 interface LogPanelProps {
   log: LogEntry[];
-  onBack: () => void;
 }
 
-export const LogPanel = ({ log, onBack }: LogPanelProps) => {
+export const LogPanel = ({ log }: LogPanelProps) => {
   const [category, setCategory] = useState<CategoryFilter>("all");
 
   const filtered = useMemo(
@@ -27,27 +26,18 @@ export const LogPanel = ({ log, onBack }: LogPanelProps) => {
 
   return (
     <div className="flex-1 flex flex-col px-3 pb-3 pt-2 md:px-6 md:pt-4 md:pb-5">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <div>
-          <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Histórico de Procedimentos
-          </div>
-          <h2 className="text-base md:text-lg font-semibold">
-            Visão Geral do Local de Prova
-          </h2>
-          <p className="mt-0.5 text-[9px] text-muted-foreground max-w-xl">
-            Acompanhe todas as ações registradas pelo coordenador: checklists concluídos,
-            ocorrências, etapas operacionais e encerramento. Use este painel para
-            revisar e apoiar o preenchimento do relatório oficial.
-          </p>
+      <div className="mb-3">
+        <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Histórico de Procedimentos
         </div>
-        <button
-          type="button"
-          onClick={onBack}
-          className="rounded-full border border-border bg-muted px-3 py-1.5 text-[9px] font-semibold text-muted-foreground hover:bg-muted/80"
-        >
-          ⬅ Voltar ao Painel
-        </button>
+        <h2 className="text-base md:text-lg font-semibold">
+          Visão Geral do Local de Prova
+        </h2>
+        <p className="mt-0.5 text-[9px] text-muted-foreground max-w-xl">
+          Acompanhe todas as ações registradas pelo coordenador: checklists concluídos,
+          ocorrências, etapas operacionais e encerramento. Use este painel para
+          revisar e apoiar o preenchimento do relatório oficial.
+        </p>
       </div>
 
       {/* Filtros */}
@@ -87,7 +77,7 @@ export const LogPanel = ({ log, onBack }: LogPanelProps) => {
         </div>
       </div>
 
-      {/* Lista bonita */}
+      {/* Lista estilizada */}
       <div className="flex-1 overflow-y-auto rounded-xl border border-border bg-card/80 shadow-sm px-3 py-3 space-y-1.5">
         {filtered.length === 0 ? (
           <div className="h-full flex items-center justify-center text-[10px] text-muted-foreground">
